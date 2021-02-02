@@ -215,6 +215,52 @@ module TwoCaptcha
       decoded_captcha
     end
 
+    #
+    # Solve FunCaptcha.
+    #
+    # @param [Hash] options Options hash. Check docs for the method decode_hcaptcha!.
+    #
+    # @return [TwoCaptcha::Captcha] The solution of the given captcha.
+    #
+    def decode_funcaptcha(options = {})
+      decode_funcaptcha!(options)
+    rescue TwoCaptcha::Error => ex
+      TwoCaptcha::Captcha.new
+    end
+
+    #
+    # Solve FunCaptcha.
+    #
+    # @param [Hash] options Options hash.
+    # @option options [String]  :surl The Service URL where the  FunCaptcha is encountered.
+    # @option options [String]  :publickey The  key of the site in which FunCaptcha is installed.
+    # @option options [String]  :pageurl The URL of the page where the FunCaptcha is encountered.
+    #
+    # @return [TwoCaptcha::Captcha] The solution of the given captcha.
+    #
+    def decode_funcaptcha!(options = {})
+      started_at = Time.now
+
+      fail(TwoCaptcha::PublicKey) if options[:publickey].empty?
+
+      upload_options = {
+        method: 'funcaptcha',
+        surl: options[:surl],
+        publickey: options[:publickey],
+        pageurl: options[:pageurl]
+      }
+      decoded_captcha = upload(upload_options)
+
+      # pool untill the answer is ready
+      while decoded_captcha.text.to_s.empty?
+        sleep([polling, 10].max) # sleep at least 10 seconds
+        decoded_captcha = captcha(decoded_captcha.id)
+        fail TwoCaptcha::Timeout if (Time.now - started_at) > timeout
+      end
+
+      decoded_captcha
+    end
+
     # Upload a captcha to 2Captcha.
     #
     # This method will not return the solution. It helps on separating concerns.

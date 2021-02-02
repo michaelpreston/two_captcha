@@ -32,6 +32,12 @@ module TwoCaptcha
     end
   end
 
+  class PublicKey < Error
+    def initialize
+      super('Missing publickey parameter')
+    end
+  end
+
   class WrongUserKey < Error
     def initialize
       super('Wrong “key” parameter format, it should contain 32 symbols')
